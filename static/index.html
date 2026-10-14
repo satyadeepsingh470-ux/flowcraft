@@ -1,0 +1,300 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>FlowCraft ⚡ Agentic Task Decomposer & Flow Planner</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/static/style.css">
+  <!-- Canvas Confetti for task completion celebration -->
+  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.3/dist/confetti.browser.min.js"></script>
+</head>
+<body>
+  <div class="app-container">
+    <!-- Header / Navbar -->
+    <header class="navbar">
+      <div class="nav-brand">
+        <span class="brand-logo">⚡</span>
+        <div>
+          <span class="brand-title">FlowCraft</span>
+          <span class="brand-badge">Agentic AI</span>
+        </div>
+      </div>
+      <div class="nav-actions">
+        <button id="btnPastPlans" class="btn btn-secondary">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+          Past Plans
+        </button>
+        <button id="btnSettings" class="btn btn-secondary">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 15a3 3 0 100-6 3 3 0 000 6z"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 01-2.83 2.83l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06a1.65 1.65 0 00.33-1.82 1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06a1.65 1.65 0 001.82.33H9a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06a1.65 1.65 0 00-.33 1.82V9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>
+          <span id="apiKeyStatusLabel">API Key</span>
+        </button>
+      </div>
+    </header>
+
+    <!-- Main Content Area -->
+    <main class="main-content">
+      <!-- Input Section / Task Form -->
+      <section id="formSection" class="hero-section">
+        <div class="hero-header">
+          <h1 class="hero-title">Defeat Procrastination.<br><span class="gradient-text">Turn Overwhelming Tasks into Atomic Steps.</span></h1>
+          <p class="hero-subtitle">Enter any complex coding or engineering goal. Our Senior Dev Agent breaks it into 10-minute micro-steps with copyable terminal commands, starter code, and verified definitions of done.</p>
+        </div>
+
+        <div class="planner-card">
+          <form id="decomposeForm">
+            <div class="form-group">
+              <label for="taskInput" class="form-label">
+                What goal or task feels intimidating right now?
+              </label>
+              <textarea 
+                id="taskInput" 
+                rows="3" 
+                class="form-textarea" 
+                placeholder="e.g. Implement Google OAuth2 authentication in FastAPI backend with refresh tokens..." 
+                required></textarea>
+            </div>
+
+            <!-- Quick Preset Pills -->
+            <div class="presets-row">
+              <span class="preset-label">Quick Ideas:</span>
+              <button type="button" class="preset-pill" data-task="Add Google OAuth2 login & JWT tokens to FastAPI backend" data-stack="Python, FastAPI, JWT">🔐 Google OAuth2 in FastAPI</button>
+              <button type="button" class="preset-pill" data-task="Dockerize fullstack app with multi-stage Dockerfile & docker-compose" data-stack="Docker, Python, Node.js">🐳 Multi-stage Docker Setup</button>
+              <button type="button" class="preset-pill" data-task="Migrate SQLite database to PostgreSQL with Alembic migrations" data-stack="Python, SQLAlchemy, Alembic, PostgreSQL">📦 Postgres & Alembic Migration</button>
+              <button type="button" class="preset-pill" data-task="Set up automated PyTest suite with fixtures & mock API coverage" data-stack="Python, PyTest">🧪 PyTest & Mocking Suite</button>
+              <button type="button" class="preset-pill" data-task="Add Redis-based sliding window rate limiter to API endpoints" data-stack="Python, Redis, FastAPI">⚡ Redis Rate Limiting</button>
+            </div>
+
+            <div class="form-grid">
+              <div class="form-group">
+                <label for="techStackInput" class="form-label">Tech Stack</label>
+                <input type="text" id="techStackInput" class="form-input" placeholder="e.g. Python, FastAPI, Postgres" value="Python, FastAPI">
+              </div>
+
+              <div class="form-group">
+                <label for="timeBudgetSelect" class="form-label">Available Time Budget</label>
+                <select id="timeBudgetSelect" class="form-select">
+                  <option value="45">45 Minutes (Quick Sprint)</option>
+                  <option value="90" selected>90 Minutes (Deep Session)</option>
+                  <option value="120">2 Hours (Standard)</option>
+                  <option value="240">4 Hours (Half Day)</option>
+                </select>
+              </div>
+
+              <div class="form-group">
+                <label for="expLevelSelect" class="form-label">Experience Level</label>
+                <select id="expLevelSelect" class="form-select">
+                  <option value="Beginner">Beginner (Extra context & details)</option>
+                  <option value="Intermediate" selected>Intermediate (Standard pace)</option>
+                  <option value="Senior">Senior (Concise & direct)</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="form-actions">
+              <button type="submit" id="btnSubmit" class="btn btn-primary btn-large">
+                <span class="btn-text">⚡ Decompose Into Atomic Flow Plan</span>
+                <span class="btn-loader" style="display: none;">
+                  <span class="spinner"></span> Decomposing with AI...
+                </span>
+              </button>
+            </div>
+          </form>
+        </div>
+      </section>
+
+      <!-- Roadmap & Plan Results Section -->
+      <section id="planSection" class="plan-section" style="display: none;">
+        <div class="plan-header-card">
+          <div class="plan-title-row">
+            <div>
+              <div class="plan-meta-pills">
+                <span class="meta-pill" id="planStackPill">Python</span>
+                <span class="meta-pill" id="planTimePill">~90 min</span>
+                <span class="meta-pill" id="planStepCountPill">5 Steps</span>
+              </div>
+              <h2 id="planTitle" class="plan-title">Project Execution Plan</h2>
+              <p id="planSummary" class="plan-summary">Plan summary here</p>
+            </div>
+            <div class="plan-cta-group">
+              <button id="btnLaunchFocus" class="btn btn-primary">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polygon points="10 8 16 12 10 16 10 8"/></svg>
+                Launch Focus Mode
+              </button>
+              <button id="btnExportMarkdown" class="btn btn-secondary" title="Export plan to Markdown">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                Export MD
+              </button>
+              <button id="btnNewPlan" class="btn btn-ghost" title="Start a new plan">
+                + New Goal
+              </button>
+            </div>
+          </div>
+
+          <!-- Overall Progress Bar -->
+          <div class="progress-container">
+            <div class="progress-label-row">
+              <span id="progressText">0 of 0 Steps Complete</span>
+              <span id="progressPercent">0%</span>
+            </div>
+            <div class="progress-track">
+              <div id="progressBar" class="progress-fill" style="width: 0%;"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Steps List Container -->
+        <div id="stepsList" class="steps-list"></div>
+      </section>
+    </main>
+
+    <!-- Full-screen Focus / Flow Mode Overlay -->
+    <div id="focusModal" class="focus-modal" style="display: none;">
+      <div class="focus-content">
+        <div class="focus-top-bar">
+          <div class="focus-step-indicator">
+            <span class="focus-phase-name" id="focusPhaseName">Phase 1</span>
+            <span class="focus-step-num" id="focusStepNum">Step 1 of 5</span>
+          </div>
+          <button id="btnCloseFocus" class="btn btn-ghost btn-icon" title="Exit Focus Mode">✕</button>
+        </div>
+
+        <!-- Pomodoro / Countdown Timer -->
+        <div class="focus-timer-card">
+          <div class="timer-display" id="timerDisplay">15:00</div>
+          <div class="timer-controls">
+            <button id="btnTimerToggle" class="btn btn-small btn-primary">Start Timer</button>
+            <button id="btnTimerReset" class="btn btn-small btn-secondary">Reset</button>
+          </div>
+        </div>
+
+        <!-- Current Step Details -->
+        <div class="focus-card">
+          <h2 id="focusStepTitle" class="focus-title">Step Title</h2>
+          <p id="focusStepDesc" class="focus-desc">Step Description</p>
+
+          <div id="focusCommandsBox" class="code-box-container" style="display: none;">
+            <div class="code-box-header">
+              <span>Terminal Command</span>
+              <button class="btn-copy" onclick="copyFocusCommands()">Copy</button>
+            </div>
+            <pre><code id="focusCommandsCode" class="language-bash"></code></pre>
+          </div>
+
+          <div id="focusStarterCodeBox" class="code-box-container" style="display: none;">
+            <div class="code-box-header">
+              <span id="focusFilePathLabel">Starter Code</span>
+              <button class="btn-copy" onclick="copyFocusStarterCode()">Copy Snippet</button>
+            </div>
+            <pre><code id="focusStarterCode"></code></pre>
+          </div>
+
+          <div class="definition-of-done-card">
+            <strong>✅ Definition of Done:</strong>
+            <span id="focusDefinitionOfDone">Verification criteria here</span>
+          </div>
+
+          <div id="focusPitfallsBox" class="pitfall-box" style="display: none;">
+            <strong>⚠️ Watch out:</strong>
+            <span id="focusPitfallsText"></span>
+          </div>
+
+          <!-- Bottom Actions -->
+          <div class="focus-bottom-actions">
+            <button id="btnFocusPrev" class="btn btn-secondary">← Previous</button>
+            <button id="btnFocusUnblock" class="btn btn-danger">
+              🚨 I'm Stuck (AI Unblock)
+            </button>
+            <button id="btnFocusComplete" class="btn btn-success">
+              ✅ Mark Done & Next →
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- AI Unblocker Modal -->
+    <div id="unblockModal" class="modal-backdrop" style="display: none;">
+      <div class="modal-card">
+        <div class="modal-header">
+          <h3 class="modal-title">🚨 AI Roadblock Diagnosis & Fix</h3>
+          <button id="btnCloseUnblock" class="btn btn-ghost btn-icon">✕</button>
+        </div>
+        <div class="modal-body">
+          <div class="unblock-step-context" id="unblockStepContext">Step: Title</div>
+          <label class="form-label">What error or roadblock are you encountering?</label>
+          <textarea id="unblockInput" rows="3" class="form-textarea" placeholder="Paste the terminal error traceback or explain what went wrong..."></textarea>
+          
+          <div id="unblockResultBox" class="unblock-result-card" style="display: none;">
+            <div class="unblock-section-title">💡 Root Cause Diagnosis:</div>
+            <p id="unblockDiagnosis" class="unblock-diagnosis-text"></p>
+
+            <div class="unblock-section-title">⚡ Instant Fix:</div>
+            <p id="unblockQuickFix" class="unblock-quickfix-text"></p>
+
+            <div class="unblock-section-title">Sub-steps to execute:</div>
+            <ul id="unblockSubstepsList" class="unblock-substeps-list"></ul>
+
+            <div id="unblockCmdBox" style="display: none;">
+              <div class="unblock-section-title">Run in Terminal:</div>
+              <pre><code id="unblockCmdText"></code></pre>
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button id="btnSubmitUnblock" class="btn btn-danger">
+            <span id="unblockBtnText">Diagnose & Unblock</span>
+            <span id="unblockBtnLoader" style="display: none;">Analyzing...</span>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- API Key Settings Modal -->
+    <div id="settingsModal" class="modal-backdrop" style="display: none;">
+      <div class="modal-card">
+        <div class="modal-header">
+          <h3 class="modal-title">⚙️ Gemini API Configuration</h3>
+          <button id="btnCloseSettings" class="btn btn-ghost btn-icon">✕</button>
+        </div>
+        <div class="modal-body">
+          <p class="settings-helper-text">
+            Enter your Google Gemini API key to unlock fully dynamic, autonomous reasoning for any custom project.
+            Your key is stored locally in your browser.
+          </p>
+          <div class="form-group">
+            <label class="form-label" for="apiKeyInput">Google Gemini API Key</label>
+            <input type="password" id="apiKeyInput" class="form-input" placeholder="AIzaSy...">
+          </div>
+          <p class="settings-link-text">
+            Don't have a key? Get a free key in 30 seconds at <a href="https://aistudio.google.com" target="_blank" rel="noopener">Google AI Studio</a>.
+          </p>
+        </div>
+        <div class="modal-footer">
+          <button id="btnSaveApiKey" class="btn btn-primary">Save Key</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Past Plans Modal -->
+    <div id="historyModal" class="modal-backdrop" style="display: none;">
+      <div class="modal-card modal-wide">
+        <div class="modal-header">
+          <h3 class="modal-title">📜 Past Flow Plans</h3>
+          <button id="btnCloseHistory" class="btn btn-ghost btn-icon">✕</button>
+        </div>
+        <div class="modal-body">
+          <div id="historyList" class="history-grid">
+            <p class="text-muted">Loading saved plans...</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <script src="/static/app.js"></script>
+</body>
+</html>
