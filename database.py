@@ -1,6 +1,7 @@
 """SQLite database management for saving and resuming FlowCraft plans."""
 import sqlite3
 import json
+import os
 from typing import List, Optional
 from models import FlowPlan, MicroStep
 
@@ -110,3 +111,60 @@ def update_step_status(plan_id: str, step_id: str, status: str):
             break
     save_plan(plan)
     return plan
+
+
+def delete_plan(plan_id: str) -> bool:
+    """Delete a plan by ID from database."""
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute("DELETE FROM plans WHERE id = ?", (plan_id,))
+    deleted = cursor.rowcount > 0
+    conn.commit()
+    conn.close()
+    return deleted
+
+
+def get_db_stats() -> dict:
+    """Retrieve database metrics, file stats, and schema details."""
+    conn = get_connection()
+    cursor = conn.cursor()
+    
+    cursor.execute("SELECT COUNT(*) as count FROM plans")
+    total_plans = cursor.fetchone()["count"]
+    
+    cursor.execute("SELECT steps FROM plans")
+    rows = cursor.fetchall()
+    total_steps = 0
+    completed_steps = 0
+    for r in rows:
+        try:
+            steps_list = json.loads(r["steps"])
+            total_steps += len(steps_list)
+            completed_steps += sum(1 for s in steps_list if s.get("status") == "completed")
+        except Exception:
+            pass
+            
+    cursor.execute("PRAGMA table_info(plans)")
+    columns = [dict(c) for c in cursor.fetchall()]
+    
+    cursor.execute("SELECT sqlite_version()")
+    sqlite_ver = cursor.fetchone()[0]
+    
+    conn.close()
+    
+    file_size_bytes = os.path.getsize(DB_FILE) if os.path.exists(DB_FILE) else 0
+    
+    return {
+        "db_file": DB_FILE,
+        "db_path": os.path.abspath(DB_FILE),
+        "file_size_bytes": file_size_bytes,
+        "file_size_kb": round(file_size_bytes / 1024, 2),
+        "sqlite_version": sqlite_ver,
+        "total_plans": total_plans,
+        "total_steps": total_steps,
+        "completed_steps": completed_steps,
+        "overall_progress_pct": int((completed_steps / total_steps * 100) if total_steps > 0 else 0),
+        "table": "plans",
+        "columns": columns
+    }
+

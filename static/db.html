@@ -1,0 +1,916 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>FlowCraft Database Explorer ⚡ SQLite Viewer</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/static/style.css">
+  <style>
+    /* Dedicated DB Explorer Styles */
+    .db-container {
+      max-width: 1280px;
+      margin: 0 auto;
+      padding: 0 28px 80px;
+    }
+
+    .db-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 24px 0;
+      border-bottom: 1px solid var(--border-color);
+      margin-bottom: 32px;
+    }
+
+    .db-brand {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+    }
+
+    .db-logo {
+      font-size: 24px;
+      background: var(--bg-card-subtle);
+      width: 44px;
+      height: 44px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: var(--radius-md);
+      border: 1px solid var(--border-color);
+    }
+
+    .db-title {
+      font-size: 20px;
+      font-weight: 800;
+      letter-spacing: -0.5px;
+    }
+
+    .badge-sqlite {
+      background: rgba(99, 102, 241, 0.15);
+      color: #818cf8;
+      border: 1px solid rgba(99, 102, 241, 0.3);
+      padding: 2px 8px;
+      border-radius: 9999px;
+      font-size: 11px;
+      font-weight: 700;
+      font-family: var(--font-mono);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    /* Metric Cards Grid */
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+      gap: 18px;
+      margin-bottom: 32px;
+    }
+
+    .stat-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-lg);
+      padding: 20px 22px;
+      position: relative;
+      overflow: hidden;
+      transition: transform 0.2s ease, border-color 0.2s ease;
+    }
+
+    .stat-card:hover {
+      border-color: rgba(99, 102, 241, 0.4);
+      transform: translateY(-2px);
+    }
+
+    .stat-card::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 2px;
+      background: var(--accent-gradient);
+      opacity: 0.6;
+    }
+
+    .stat-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 8px;
+    }
+
+    .stat-label {
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--text-secondary);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .stat-icon {
+      width: 32px;
+      height: 32px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: var(--radius-sm);
+      background: var(--bg-card-subtle);
+      border: 1px solid var(--border-color);
+    }
+
+    .stat-value {
+      font-size: 28px;
+      font-weight: 800;
+      color: var(--text-primary);
+      line-height: 1.2;
+    }
+
+    .stat-subtext {
+      font-size: 12px;
+      color: var(--text-muted);
+      margin-top: 6px;
+      font-family: var(--font-mono);
+    }
+
+    /* Controls Bar */
+    .controls-panel {
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-lg);
+      padding: 16px 20px;
+      margin-bottom: 24px;
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+    }
+
+    .search-box {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      background: var(--bg-input);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-md);
+      padding: 8px 14px;
+      flex: 1;
+      min-width: 260px;
+      max-width: 420px;
+      transition: border-color 0.2s ease;
+    }
+
+    .search-box:focus-within {
+      border-color: var(--border-focus);
+    }
+
+    .search-input {
+      background: transparent;
+      border: none;
+      color: var(--text-primary);
+      font-size: 14px;
+      width: 100%;
+      outline: none;
+      font-family: var(--font-sans);
+    }
+
+    .filter-group {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+
+    .select-dropdown {
+      background: var(--bg-input);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-md);
+      color: var(--text-primary);
+      padding: 8px 14px;
+      font-size: 13px;
+      outline: none;
+      cursor: pointer;
+    }
+
+    .select-dropdown:focus {
+      border-color: var(--border-focus);
+    }
+
+    /* Table Container */
+    .table-wrapper {
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-lg);
+      overflow: hidden;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.25);
+    }
+
+    .data-table {
+      width: 100%;
+      border-collapse: collapse;
+      text-align: left;
+      font-size: 13.5px;
+    }
+
+    .data-table th {
+      background: var(--bg-card-subtle);
+      color: var(--text-secondary);
+      font-weight: 700;
+      text-transform: uppercase;
+      font-size: 11px;
+      letter-spacing: 0.6px;
+      padding: 14px 18px;
+      border-bottom: 1px solid var(--border-color);
+      user-select: none;
+    }
+
+    .data-table td {
+      padding: 16px 18px;
+      border-bottom: 1px solid var(--border-color);
+      vertical-align: middle;
+      color: var(--text-primary);
+    }
+
+    .data-table tbody tr {
+      transition: background-color 0.15s ease;
+    }
+
+    .data-table tbody tr:hover {
+      background-color: rgba(255, 255, 255, 0.02);
+    }
+
+    .data-table tbody tr:last-child td {
+      border-bottom: none;
+    }
+
+    .plan-id-tag {
+      font-family: var(--font-mono);
+      font-size: 12px;
+      color: #818cf8;
+      background: rgba(99, 102, 241, 0.1);
+      padding: 3px 8px;
+      border-radius: var(--radius-sm);
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      cursor: pointer;
+      border: 1px solid rgba(99, 102, 241, 0.25);
+    }
+
+    .plan-id-tag:hover {
+      background: rgba(99, 102, 241, 0.2);
+    }
+
+    .plan-title-cell {
+      max-width: 320px;
+    }
+
+    .plan-title-link {
+      font-weight: 700;
+      color: var(--text-primary);
+      text-decoration: none;
+      display: block;
+      margin-bottom: 4px;
+      line-height: 1.4;
+      cursor: pointer;
+    }
+
+    .plan-title-link:hover {
+      color: var(--accent-primary);
+    }
+
+    .plan-summary-snippet {
+      font-size: 12px;
+      color: var(--text-muted);
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .stack-badge {
+      display: inline-block;
+      font-size: 11.5px;
+      font-family: var(--font-mono);
+      color: #38bdf8;
+      background: rgba(56, 189, 248, 0.1);
+      border: 1px solid rgba(56, 189, 248, 0.25);
+      padding: 2px 8px;
+      border-radius: 9999px;
+      white-space: nowrap;
+    }
+
+    .progress-bar-container {
+      width: 120px;
+      background: var(--bg-card-subtle);
+      border-radius: 9999px;
+      height: 7px;
+      overflow: hidden;
+      margin-top: 6px;
+      border: 1px solid rgba(255, 255, 255, 0.05);
+    }
+
+    .progress-bar-fill {
+      height: 100%;
+      background: var(--accent-gradient);
+      border-radius: 9999px;
+      transition: width 0.3s ease;
+    }
+
+    .progress-bar-fill.complete {
+      background: #10b981;
+    }
+
+    .action-btn-group {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .btn-action {
+      background: var(--bg-card-subtle);
+      border: 1px solid var(--border-color);
+      color: var(--text-secondary);
+      padding: 6px 12px;
+      border-radius: var(--radius-sm);
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      transition: all 0.15s ease;
+    }
+
+    .btn-action:hover {
+      background: var(--bg-input);
+      color: var(--text-primary);
+      border-color: var(--accent-primary);
+    }
+
+    .btn-action-danger:hover {
+      background: var(--danger-bg);
+      color: var(--danger);
+      border-color: var(--danger);
+    }
+
+    /* Modal / Inspector Drawer */
+    .drawer-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(0, 0, 0, 0.75);
+      backdrop-filter: blur(6px);
+      display: none;
+      justify-content: flex-end;
+      z-index: 1000;
+      animation: fadeIn 0.2s ease;
+    }
+
+    .drawer-content {
+      width: 100%;
+      max-width: 680px;
+      height: 100vh;
+      background: var(--bg-card);
+      border-left: 1px solid var(--border-color);
+      display: flex;
+      flex-direction: column;
+      animation: slideLeft 0.25s ease;
+      overflow-y: auto;
+    }
+
+    @keyframes slideLeft {
+      from { transform: translateX(100%); }
+      to { transform: translateX(0); }
+    }
+
+    .drawer-header {
+      padding: 24px;
+      border-bottom: 1px solid var(--border-color);
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 16px;
+      position: sticky;
+      top: 0;
+      background: var(--bg-card);
+      z-index: 10;
+    }
+
+    .drawer-body {
+      padding: 24px;
+      flex: 1;
+    }
+
+    .tab-nav {
+      display: flex;
+      gap: 10px;
+      border-bottom: 1px solid var(--border-color);
+      margin-bottom: 20px;
+      padding-bottom: 8px;
+    }
+
+    .tab-btn {
+      background: transparent;
+      border: none;
+      color: var(--text-secondary);
+      font-size: 13.5px;
+      font-weight: 600;
+      padding: 6px 12px;
+      cursor: pointer;
+      border-radius: var(--radius-sm);
+    }
+
+    .tab-btn.active {
+      color: var(--text-primary);
+      background: var(--bg-card-subtle);
+    }
+
+    .raw-json-box {
+      background: var(--bg-input);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-md);
+      padding: 16px;
+      font-family: var(--font-mono);
+      font-size: 12px;
+      color: #93c5fd;
+      overflow-x: auto;
+      max-height: 480px;
+      white-space: pre-wrap;
+      line-height: 1.5;
+    }
+
+    .step-item-card {
+      background: var(--bg-card-subtle);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-md);
+      padding: 16px;
+      margin-bottom: 14px;
+    }
+
+    .step-badge-tag {
+      font-size: 11px;
+      font-family: var(--font-mono);
+      padding: 2px 6px;
+      border-radius: 4px;
+      text-transform: uppercase;
+      font-weight: 700;
+    }
+
+    .step-badge-completed {
+      background: var(--success-bg);
+      color: var(--success);
+    }
+
+    .step-badge-pending {
+      background: rgba(245, 158, 11, 0.12);
+      color: var(--warning);
+    }
+
+    .toast {
+      position: fixed;
+      bottom: 28px;
+      right: 28px;
+      background: var(--bg-card-subtle);
+      border: 1px solid var(--border-focus);
+      color: var(--text-primary);
+      padding: 12px 20px;
+      border-radius: var(--radius-md);
+      box-shadow: 0 10px 25px rgba(0,0,0,0.4);
+      display: none;
+      align-items: center;
+      gap: 10px;
+      z-index: 2000;
+      font-size: 13.5px;
+      font-weight: 600;
+      animation: fadeIn 0.2s ease;
+    }
+  </style>
+</head>
+<body>
+  <div class="db-container">
+    <!-- Navbar Header -->
+    <header class="db-header">
+      <div class="db-brand">
+        <div class="db-logo">⚡</div>
+        <div>
+          <div style="display: flex; align-items: center; gap: 8px;">
+            <span class="db-title">FlowCraft Database</span>
+            <span class="badge-sqlite">SQLite 3</span>
+          </div>
+          <div style="font-size: 12px; color: var(--text-muted); font-family: var(--font-mono); margin-top: 2px;" id="dbFilePath">
+            flowcraft.db
+          </div>
+        </div>
+      </div>
+      <div style="display: flex; gap: 12px; align-items: center;">
+        <a href="/" class="btn btn-secondary">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 12H5m7 7l-7-7 7-7"/></svg>
+          Back to App
+        </a>
+        <a href="/docs" target="_blank" class="btn btn-secondary">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><path d="M14 2v6h6"/></svg>
+          API Docs
+        </a>
+        <button id="btnRefresh" class="btn btn-primary" title="Refresh records">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 4v6h-6M1 20v-6h6M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15"/></svg>
+          Refresh
+        </button>
+      </div>
+    </header>
+
+    <!-- Metrics Cards Grid -->
+    <section class="stats-grid">
+      <div class="stat-card">
+        <div class="stat-header">
+          <span class="stat-label">Saved Plans</span>
+          <div class="stat-icon">📁</div>
+        </div>
+        <div class="stat-value" id="statTotalPlans">-</div>
+        <div class="stat-subtext">Table: <code>plans</code></div>
+      </div>
+
+      <div class="stat-card">
+        <div class="stat-header">
+          <span class="stat-label">Micro-Steps Tracked</span>
+          <div class="stat-icon">🎯</div>
+        </div>
+        <div class="stat-value" id="statTotalSteps">-</div>
+        <div class="stat-subtext" id="statStepsSubtext">- completed</div>
+      </div>
+
+      <div class="stat-card">
+        <div class="stat-header">
+          <span class="stat-label">Overall Completion</span>
+          <div class="stat-icon">📈</div>
+        </div>
+        <div class="stat-value" id="statProgressPct">-%</div>
+        <div class="stat-subtext">Across all tasks</div>
+      </div>
+
+      <div class="stat-card">
+        <div class="stat-header">
+          <span class="stat-label">DB Size & Engine</span>
+          <div class="stat-icon">💾</div>
+        </div>
+        <div class="stat-value" id="statDbSize">- KB</div>
+        <div class="stat-subtext" id="statSqliteVer">SQLite engine</div>
+      </div>
+    </section>
+
+    <!-- Table Controls Bar -->
+    <section class="controls-panel">
+      <div class="search-box">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color: var(--text-muted);"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
+        <input type="text" id="searchInput" class="search-input" placeholder="Search by plan title, tech stack, or ID...">
+      </div>
+
+      <div class="filter-group">
+        <select id="statusFilter" class="select-dropdown">
+          <option value="all">All Statuses</option>
+          <option value="completed">100% Completed</option>
+          <option value="in_progress">In Progress</option>
+          <option value="not_started">Not Started (0%)</option>
+        </select>
+
+        <select id="sortSelect" class="select-dropdown">
+          <option value="newest">Sort: Newest First</option>
+          <option value="oldest">Sort: Oldest First</option>
+          <option value="time_desc">Sort: Longest Time</option>
+          <option value="time_asc">Sort: Shortest Time</option>
+        </select>
+      </div>
+    </section>
+
+    <!-- Database Table -->
+    <div class="table-wrapper">
+      <table class="data-table" id="plansTable">
+        <thead>
+          <tr>
+            <th style="width: 130px;">Plan ID</th>
+            <th>Title & Strategy</th>
+            <th style="width: 160px;">Tech Stack</th>
+            <th style="width: 100px;">Est. Time</th>
+            <th style="width: 170px;">Steps & Progress</th>
+            <th style="width: 120px;">Created</th>
+            <th style="width: 170px; text-align: right;">Actions</th>
+          </tr>
+        </thead>
+        <tbody id="plansTableBody">
+          <tr>
+            <td colspan="7" style="text-align: center; color: var(--text-muted); padding: 40px;">
+              Loading plans from SQLite...
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Inspect Drawer / Slide-Over Modal -->
+  <div class="drawer-overlay" id="drawerOverlay">
+    <div class="drawer-content">
+      <div class="drawer-header">
+        <div>
+          <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 6px;">
+            <span class="plan-id-tag" id="drawerPlanId">plan-id</span>
+            <span class="stack-badge" id="drawerStack">Stack</span>
+          </div>
+          <h2 id="drawerTitle" style="font-size: 18px; font-weight: 800; line-height: 1.3;">Plan Title</h2>
+        </div>
+        <button id="btnCloseDrawer" class="btn btn-secondary" style="padding: 6px 10px;">✕</button>
+      </div>
+
+      <div class="drawer-body">
+        <p id="drawerSummary" style="font-size: 13.5px; color: var(--text-secondary); margin-bottom: 20px; line-height: 1.5;"></p>
+        
+        <div class="tab-nav">
+          <button class="tab-btn active" data-tab="tabSteps" onclick="switchDrawerTab('tabSteps')">Micro-Steps</button>
+          <button class="tab-btn" data-tab="tabJson" onclick="switchDrawerTab('tabJson')">Raw JSON</button>
+          <button class="tab-btn" data-tab="tabSchema" onclick="switchDrawerTab('tabSchema')">Schema Info</button>
+        </div>
+
+        <!-- Tab 1: Micro-Steps -->
+        <div id="tabSteps">
+          <div id="drawerStepsList">Loading steps...</div>
+        </div>
+
+        <!-- Tab 2: Raw JSON -->
+        <div id="tabJson" style="display: none;">
+          <div style="display: flex; justify-content: flex-end; margin-bottom: 8px;">
+            <button class="btn-action" onclick="copyRawJson()">
+              📋 Copy JSON
+            </button>
+          </div>
+          <pre class="raw-json-box" id="rawJsonBox"></pre>
+        </div>
+
+        <!-- Tab 3: Schema Info -->
+        <div id="tabSchema" style="display: none;">
+          <div style="font-size: 13px; color: var(--text-secondary); margin-bottom: 12px;">
+            Table <code>plans</code> schema definition in <code>flowcraft.db</code>:
+          </div>
+          <pre class="raw-json-box" id="schemaBox"></pre>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast Notification -->
+  <div class="toast" id="toast">
+    <span id="toastMsg">Action complete</span>
+  </div>
+
+  <script>
+    let allPlans = [];
+    let currentDetailedPlan = null;
+    let dbStats = null;
+
+    async function loadDbStats() {
+      try {
+        const res = await fetch("/api/db/stats");
+        dbStats = await res.json();
+        document.getElementById("statTotalPlans").innerText = dbStats.total_plans;
+        document.getElementById("statTotalSteps").innerText = dbStats.total_steps;
+        document.getElementById("statStepsSubtext").innerText = `${dbStats.completed_steps} of ${dbStats.total_steps} completed`;
+        document.getElementById("statProgressPct").innerText = `${dbStats.overall_progress_pct}%`;
+        document.getElementById("statDbSize").innerText = `${dbStats.file_size_kb} KB`;
+        document.getElementById("statSqliteVer").innerText = `v${dbStats.sqlite_version} (${dbStats.table})`;
+        document.getElementById("dbFilePath").innerText = dbStats.db_path || "flowcraft.db";
+        document.getElementById("schemaBox").innerText = JSON.stringify(dbStats.columns, null, 2);
+      } catch (e) {
+        console.error("Error fetching DB stats:", e);
+      }
+    }
+
+    async function loadPlans() {
+      const tbody = document.getElementById("plansTableBody");
+      tbody.innerHTML = `<tr><td colspan="7" style="text-align:center; padding: 30px; color: var(--text-muted);">Fetching plans from database...</td></tr>`;
+      try {
+        const res = await fetch("/api/plans");
+        allPlans = await res.json();
+        renderTable();
+      } catch (e) {
+        tbody.innerHTML = `<tr><td colspan="7" style="text-align:center; padding: 30px; color: var(--danger);">Failed to load database plans.</td></tr>`;
+      }
+    }
+
+    function renderTable() {
+      const tbody = document.getElementById("plansTableBody");
+      const search = document.getElementById("searchInput").value.toLowerCase().trim();
+      const statusFilter = document.getElementById("statusFilter").value;
+      const sort = document.getElementById("sortSelect").value;
+
+      let filtered = allPlans.filter(p => {
+        const matchesSearch = !search || 
+          p.title.toLowerCase().includes(search) || 
+          p.tech_stack.toLowerCase().includes(search) || 
+          p.id.toLowerCase().includes(search);
+
+        if (!matchesSearch) return false;
+
+        if (statusFilter === "completed") return p.progress_pct === 100;
+        if (statusFilter === "in_progress") return p.progress_pct > 0 && p.progress_pct < 100;
+        if (statusFilter === "not_started") return p.progress_pct === 0;
+        return true;
+      });
+
+      filtered.sort((a, b) => {
+        if (sort === "newest") return new Date(b.created_at) - new Date(a.created_at);
+        if (sort === "oldest") return new Date(a.created_at) - new Date(b.created_at);
+        if (sort === "time_desc") return b.total_estimated_minutes - a.total_estimated_minutes;
+        if (sort === "time_asc") return a.total_estimated_minutes - b.total_estimated_minutes;
+        return 0;
+      });
+
+      if (filtered.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="7" style="text-align:center; padding: 40px; color: var(--text-muted);">No matching plans found in database.</td></tr>`;
+        return;
+      }
+
+      tbody.innerHTML = filtered.map(p => {
+        const isComplete = p.progress_pct === 100;
+        const dateStr = p.created_at ? new Date(p.created_at).toLocaleDateString() : "-";
+        return `
+          <tr>
+            <td>
+              <span class="plan-id-tag" onclick="copyToClipboard('${p.id}', 'Plan ID copied!')" title="Click to copy ID">
+                ${p.id}
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 4h2a2 2 0 012 2v14a2 2 0 01-2 2H6a2 2 0 01-2-2V6a2 2 0 012-2h2"/><rect x="8" y="2" width="8" height="4" rx="1" ry="1"/></svg>
+              </span>
+            </td>
+            <td class="plan-title-cell">
+              <a class="plan-title-link" onclick="inspectPlan('${p.id}')">${escapeHtml(p.title)}</a>
+              <div class="plan-summary-snippet">${p.total_steps} micro-steps organized in phases</div>
+            </td>
+            <td>
+              <span class="stack-badge">${escapeHtml(p.tech_stack || "Fullstack")}</span>
+            </td>
+            <td>
+              <span style="font-weight: 600;">~${p.total_estimated_minutes}</span> <span style="font-size: 11px; color: var(--text-muted);">min</span>
+            </td>
+            <td>
+              <div style="font-size: 12px; font-weight: 600; display: flex; justify-content: space-between;">
+                <span>${p.completed_steps}/${p.total_steps} done</span>
+                <span style="color: ${isComplete ? '#10b981' : 'var(--text-secondary)'};">${p.progress_pct}%</span>
+              </div>
+              <div class="progress-bar-container">
+                <div class="progress-bar-fill ${isComplete ? 'complete' : ''}" style="width: ${p.progress_pct}%;"></div>
+              </div>
+            </td>
+            <td>
+              <span style="font-size: 12px; color: var(--text-secondary);">${dateStr}</span>
+            </td>
+            <td style="text-align: right;">
+              <div class="action-btn-group" style="justify-content: flex-end;">
+                <button class="btn-action" onclick="inspectPlan('${p.id}')" title="Inspect full plan">
+                  🔍 Inspect
+                </button>
+                <button class="btn-action" onclick="openInApp('${p.id}')" title="Load into FlowCraft runner">
+                  ⚡ Open
+                </button>
+                <button class="btn-action btn-action-danger" onclick="deletePlan('${p.id}', '${escapeHtml(p.title)}')" title="Delete from SQLite">
+                  🗑️
+                </button>
+              </div>
+            </td>
+          </tr>
+        `;
+      }).join("");
+    }
+
+    async function inspectPlan(planId) {
+      document.getElementById("drawerOverlay").style.display = "flex";
+      document.getElementById("drawerPlanId").innerText = planId;
+      document.getElementById("drawerStepsList").innerHTML = `<p style="color: var(--text-muted);">Loading plan details from database...</p>`;
+      
+      try {
+        const res = await fetch(`/api/plans/${planId}`);
+        currentDetailedPlan = await res.json();
+        
+        document.getElementById("drawerTitle").innerText = currentDetailedPlan.title;
+        document.getElementById("drawerStack").innerText = currentDetailedPlan.tech_stack;
+        document.getElementById("drawerSummary").innerText = currentDetailedPlan.summary || "";
+        document.getElementById("rawJsonBox").innerText = JSON.stringify(currentDetailedPlan, null, 2);
+
+        // Render steps
+        const stepsHtml = currentDetailedPlan.steps.map((s, idx) => {
+          const isDone = s.status === "completed";
+          return `
+            <div class="step-item-card">
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+                <span style="font-size: 11px; font-weight: 700; color: var(--accent-primary); text-transform: uppercase;">
+                  ${escapeHtml(s.phase || `Phase ${idx+1}`)} • Step ${idx+1}
+                </span>
+                <span class="step-badge-tag ${isDone ? 'step-badge-completed' : 'step-badge-pending'}">
+                  ${s.status}
+                </span>
+              </div>
+              <h4 style="font-size: 14px; font-weight: 700; margin-bottom: 6px;">${escapeHtml(s.title)}</h4>
+              <p style="font-size: 13px; color: var(--text-secondary); margin-bottom: 10px;">${escapeHtml(s.description)}</p>
+              
+              ${s.commands && s.commands.length ? `
+                <div style="margin-top: 8px;">
+                  <div style="font-size: 11px; font-weight: 700; color: var(--text-muted); text-transform: uppercase; margin-bottom: 4px;">Command:</div>
+                  <pre style="background: var(--bg-input); padding: 8px 12px; border-radius: 6px; font-family: var(--font-mono); font-size: 12px; color: #38bdf8;">${escapeHtml(s.commands.join(" && "))}</pre>
+                </div>
+              ` : ''}
+
+              <div style="margin-top: 8px; font-size: 12px; color: var(--text-muted);">
+                <span style="color: #10b981; font-weight: 600;">✓ Definition of Done:</span> ${escapeHtml(s.definition_of_done)}
+              </div>
+            </div>
+          `;
+        }).join("");
+
+        document.getElementById("drawerStepsList").innerHTML = stepsHtml;
+      } catch (e) {
+        document.getElementById("drawerStepsList").innerHTML = `<p style="color: var(--danger);">Failed to load plan details.</p>`;
+      }
+    }
+
+    function switchDrawerTab(tabId) {
+      document.querySelectorAll(".tab-btn").forEach(b => b.classList.remove("active"));
+      document.querySelector(`[data-tab="${tabId}"]`).classList.add("active");
+      document.getElementById("tabSteps").style.display = tabId === "tabSteps" ? "block" : "none";
+      document.getElementById("tabJson").style.display = tabId === "tabJson" ? "block" : "none";
+      document.getElementById("tabSchema").style.display = tabId === "tabSchema" ? "block" : "none";
+    }
+
+    function openInApp(planId) {
+      window.location.href = `/?plan_id=${planId}`;
+    }
+
+    async function deletePlan(planId, title) {
+      if (!confirm(`Are you sure you want to delete "${title}" from SQLite?`)) return;
+      try {
+        const res = await fetch(`/api/plans/${planId}`, { method: "DELETE" });
+        if (res.ok) {
+          showToast("Plan deleted from database");
+          await loadDbStats();
+          await loadPlans();
+        } else {
+          alert("Failed to delete plan.");
+        }
+      } catch (e) {
+        alert("Error deleting plan.");
+      }
+    }
+
+    function copyRawJson() {
+      if (!currentDetailedPlan) return;
+      navigator.clipboard.writeText(JSON.stringify(currentDetailedPlan, null, 2));
+      showToast("JSON copied to clipboard!");
+    }
+
+    function copyToClipboard(text, msg) {
+      navigator.clipboard.writeText(text);
+      showToast(msg || "Copied!");
+    }
+
+    function showToast(msg) {
+      const toast = document.getElementById("toast");
+      document.getElementById("toastMsg").innerText = msg;
+      toast.style.display = "flex";
+      setTimeout(() => { toast.style.display = "none"; }, 2500);
+    }
+
+    function escapeHtml(str) {
+      if (!str) return "";
+      return String(str)
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;");
+    }
+
+    // Event Listeners
+    document.getElementById("btnCloseDrawer").addEventListener("click", () => {
+      document.getElementById("drawerOverlay").style.display = "none";
+    });
+    document.getElementById("drawerOverlay").addEventListener("click", (e) => {
+      if (e.target === document.getElementById("drawerOverlay")) {
+        document.getElementById("drawerOverlay").style.display = "none";
+      }
+    });
+    document.getElementById("searchInput").addEventListener("input", renderTable);
+    document.getElementById("statusFilter").addEventListener("change", renderTable);
+    document.getElementById("sortSelect").addEventListener("change", renderTable);
+    document.getElementById("btnRefresh").addEventListener("click", async () => {
+      await loadDbStats();
+      await loadPlans();
+      showToast("Database refreshed");
+    });
+
+    // Initial Load
+    loadDbStats();
+    loadPlans();
+  </script>
+</body>
+</html>

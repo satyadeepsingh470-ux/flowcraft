@@ -314,16 +314,18 @@ function setLoading(isLoading) {
 }
 
 async function loadLastPlanIfAvailable() {
-  const lastId = localStorage.getItem("flowcraft_last_plan_id");
-  if (lastId) {
+  const urlParamId = new URLSearchParams(window.location.search).get("plan_id");
+  const targetId = urlParamId || localStorage.getItem("flowcraft_last_plan_id");
+  if (targetId) {
     try {
-      const res = await fetch(`/api/plans/${lastId}`);
+      const res = await fetch(`/api/plans/${targetId}`);
       if (res.ok) {
         currentPlan = await res.json();
         renderPlan(currentPlan);
+        localStorage.setItem("flowcraft_last_plan_id", currentPlan.id);
       }
     } catch (e) {
-      console.warn("Could not load previous plan", e);
+      console.warn("Could not load target plan", e);
     }
   }
 }

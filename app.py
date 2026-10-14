@@ -31,6 +31,28 @@ def serve_index():
     return FileResponse("static/index.html")
 
 
+@app.get("/db")
+def serve_db_ui():
+    """Serve dedicated database explorer interface."""
+    return FileResponse("static/db.html")
+
+
+@app.get("/api/db/stats")
+def db_stats_endpoint():
+    """Retrieve SQLite database storage and schema metrics."""
+    return database.get_db_stats()
+
+
+@app.delete("/api/plans/{plan_id}")
+def delete_plan_endpoint(plan_id: str):
+    """Delete a plan by ID from database."""
+    success = database.delete_plan(plan_id)
+    if not success:
+        raise HTTPException(status_code=404, detail="Plan not found.")
+    return {"status": "deleted", "plan_id": plan_id}
+
+
+
 @app.post("/api/decompose", response_model=FlowPlan)
 def decompose_endpoint(req: DecomposeRequest):
     """Decompose high-level intimidating task into atomic micro-steps."""
