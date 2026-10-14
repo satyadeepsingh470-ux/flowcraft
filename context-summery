@@ -1,4 +1,4 @@
-Here is a complete summary of everything we accomplished in this session:
+Here is a complete summary of everything accomplished in this session:
 
 ---
 
@@ -45,3 +45,30 @@ Here is a complete summary of everything we accomplished in this session:
     3. *Build Fullstack Dashboard* (4 micro-steps)
     4. *OAuth2 / JWT Authentication Flow* (4 micro-steps)
   * Outlined how to access the database via UI ([http://localhost:8001](http://localhost:8001)), REST API (`/api/plans`), or `sqlite3` CLI.
+
+---
+
+### 5. Dedicated Database Explorer UI (`/db`)
+* **Built Full-Page SQLite Explorer ([`static/db.html`](file:///Users/satya/agent-pro/static/db.html)):**
+  * **Direct URL:** [http://localhost:8001/db](http://localhost:8001/db)
+  * **Top Navbar Link:** Added a direct "Database" button in [`static/index.html`](file:///Users/satya/agent-pro/static/index.html) to navigate between the app and the explorer with 1 click.
+* **Interactive UI Features:**
+  * **KPI Metric Cards:** Live counters for Total Plans, Micro-Steps, Overall Completion %, and SQLite file size / version.
+  * **Search & Filters:** Real-time search across titles, stacks, and plan IDs; status dropdown (`100% Completed`, `In Progress`, `Not Started`); multi-field sorting.
+  * **Data Table:** Plan ID with 1-click clipboard copy, completion progress bars, tech stack badges, and formatted timestamps.
+  * **Slide-over Inspector Drawer:**
+    * *Micro-Steps Tab:* Full step descriptions, executable shell commands, and Definitions of Done.
+    * *Raw JSON Tab:* Formatted JSON output with a 1-click copy button.
+    * *Schema Info Tab:* SQLite column names, data types, and primary key definitions.
+  * **Plan Actions:**
+    * *⚡ Open in App:* Directly loads any selected plan into FlowCraft's step runner via `/?plan_id=...`.
+    * *🗑️ Delete:* Confirms and deletes unwanted plans from SQLite.
+    * *Refresh:* Syncs live database records without page reload.
+* **New Backend Endpoints & Methods:**
+  * `GET /db` — Serves the dedicated database viewer interface.
+  * `GET /api/db/stats` — Returns SQLite storage metrics, version, schema info, and step statistics.
+  * `DELETE /api/plans/{plan_id}` — Deletes a plan from SQLite.
+  * Added `get_db_stats()` and `delete_plan()` functions in [`database.py`](file:///Users/satya/agent-pro/database.py).
+  * Updated [`static/app.js`](file:///Users/satya/agent-pro/static/app.js) to automatically parse `?plan_id=` and load the plan into the UI.
+* **GitHub Repository Sync:**
+  * Staged, committed, and pushed all changes to [https://github.com/satyadeepsingh470-ux/flowcraft](https://github.com/satyadeepsingh470-ux/flowcraft).
